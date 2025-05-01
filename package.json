@@ -1,0 +1,20 @@
+{
+  "name": "universe-sube",
+  "version": "1.0.0",
+  "description": "API RESTful construida con Node.js y Express que proporciona funcionalidades en base un dataset proporcionado previamente.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "PWII - GRUPO 4",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
