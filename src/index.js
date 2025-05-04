@@ -1,15 +1,13 @@
-import express from "express";
+const express = require("express");
+const transactionsRoutes = require('./routes/transaction.routes.js');
 
 const PORT = 7_050;
 const App = express();
 
-App.get("/transaction", (req, res) => {
-    res.send("Hola")
-})
+App.use(express.json());
+App.use('/api/transaction', transactionsRoutes.Router);
 
-function start() {
+App.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}.`);
     console.log(`http://localhost:${PORT}/`);
-}
-
-App.listen(PORT, start);
+});

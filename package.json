@@ -6,7 +6,7 @@
   "directories": {
     "doc": "docs"
   },
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
@@ -15,6 +15,7 @@
   "author": "PWII - GRUPO 4",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "stream-json": "^1.9.1"
   }
 }
