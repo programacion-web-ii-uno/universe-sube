@@ -1,75 +1,58 @@
-/**
- * Se encarga de ela logica de peticiones HTTP, errores 400, status code, etc.
- * Usa los servicios
- */
-
 const transactionServices = require("../services/transaction.services.js");
 
-class Validate {
-    MAX_LIMIT = 100;
+async function getAll(req, res) {
+    await transactionServices.getAll(req.data.pagination)
+        .then(founds => {
+            res.status(200).json(founds);
+        })
+        .catch((error) => {
+            res.status(500).json({ error: error.message });
+        });
+}
 
-    limit(value){
-        const Match = value.match(/[0-9]{3}/);
+/**
+ * @description find transactions with filters and pagination
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+async function find(req, res) {
+    await transactionServices.find(req.data.filters, req.data.pagination)
+        .then((founds) => {
+            res.status(200).json(founds);
+        })
+        .catch((error) => {
+            res.status(500).json({ error: error.message });
+        });
+}
 
-        if(Match === null) return false;
-
-        const ValueNumber = Number(Match[0]);
-
-        return 0 <= ValueNumber && ValueNumber <= MAX_LIMIT;
-    }
-
-    offset(value){
-        const Match = value.match(/[0-9]{3}/);
-
-        if(Match === null) return false;
-
-        const ValueNumber = Number(Match[0]);
-
-        return 0 <= ValueNumber;
-    }
-
-    date(value) {
-        const match = value.match(/^(\w{4})-(\w{2})-(\w{2})$/);
-        if(match === null) return false;
-        return { year: match[1], month: match[2], day: match[3] };
-    }
-
-    validatorsParams = [
-        { "limit": limitAndOffset },
-        { "since": date },
-        { "until": date },
-        { "companyName": () => true },
-        { "line": () => true },
-        { "amba": value => value.match(/(true|false)/) !== null },
-        { "transportType": () => true },
-        { "Jurisdiction": () => true },
-        { "Province": () => true },
-        { "Municipality": () => true },
-        { "Quantity": () => true },
-        { "PreliminaryDat": () => true }
-    ];
+/**
+ * @description find the transaction unique by id
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {Promise<void>}
+ */
+function findByID(req, res) {
+    const { id } = req.data.params;
+    transactionServices.findByID(id)
+        .then(found => {
+            if (found) {
+                res.status(200).json(found);
+            } else {
+                res.status(404).json({ error: "Transaction not found" });
+            }
+        })
+        .catch((error) => {
+            const STATUS_CODE = 500;
+            res.status(STATUS_CODE).json({ error: { message: error.message, status: STATUS_CODE } });
+        });
 }
 
 /**
  * @param {import('express').Request} req
  */
-function getLimitOffset(req) {
-    const
-        LIMIT_DEFAULT = 50,
-        OFFSET_DEFAULT = 0;
-    let limit, offset;
-
-    const Queries = Object.keys(req.query);
-    if(!( Queries.includes("limit") && Queries.includes("offset") )) {
-        limit = LIMIT_DEFAULT;
-        offset = OFFSET_DEFAULT;
-    }
-    else {
-        limit = req.query.limit;
-        offset = req.query.offset;
-    }
-
-    return { limit, offset };
+function hasFilter(req) {
+    return ("filters" in req.data && 1 <= Object.keys(req.data.filters).length);
 }
 
 /**
@@ -77,38 +60,25 @@ function getLimitOffset(req) {
  * @param {import('express').Response} res
  */
 async function get(req, res) {
-    const { limit: Limit, offset: Offset } = getLimitOffset(req);
 
     try {
-        const transactions = await transactionServices.getAll(Limit, Offset);
-        res.status(200).json(transactions);
+        if(hasFilter(req)) {
+            // get transaction with filters and pagination
+            await find(req, res);
+        }
+        else {
+            // get all transaction with pagination
+            await getAll(req, res);
+        }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        if(error.message.includes("[ERR_FIELD_QUERY_INVALID]")) {
+            // Bad Request
+            res.status(400).json({ error: error.message });
+        }
+        else {
+            res.status(500).json({ error: error.message });
+        }
     }
-    /* const Queries = Object.keys(req.query);
-
-    {
-        TransportDay,
-        CompanyName,
-        Line,
-        Amba,
-        TransportType,
-        Jurisdiction,
-        Province,
-        Municipality,
-        Quantity,
-        PreliminaryData
-    }
-
-    const HasFilters = SearchParameters.some(
-        (e) => e.normalize("NFKD").trim() !== ""
-    );
-
-    if (HasFilters) {
-        transactionController.find(params);
-    } else {
-        transactionController.getAlltransactions();
-    } */
 }
 
-module.exports = { get }
+module.exports = { get, findByID }

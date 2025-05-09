@@ -5,18 +5,9 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch Program",
-            "program": "${workspaceFolder}/index.js",
-            "request": "launch",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "node"
-        },
-        {
+            "name": "Start Program",
             "type": "node",
             "request": "launch",
-            "name": "Iniciar el programa",
             "skipFiles": [
                 "<node_internals>/**"
             ],
