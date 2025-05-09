@@ -1,13 +1,10 @@
 const transactionServices = require("../services/transaction.services.js");
 
 /**
- * @description find transactions with filters and pagination
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @returns {Promise<void>}
+ * Busca transacciones según filtros y paginación.
  */
 async function find(req, res) {
-    const Filters = req.data.filters ?? {}
+    const Filters = req.data.filters ?? {};
     await transactionServices.find(Filters, req.data.pagination)
         .then((founds) => {
             const STATUS_CODE = 200;
@@ -27,10 +24,7 @@ async function find(req, res) {
 }
 
 /**
- * @description find the transaction unique by id
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @returns {Promise<void>}
+ * Busca una transacción por ID.
  */
 async function findByID(req, res) {
     const { id } = req.data.params;
@@ -53,36 +47,32 @@ async function findByID(req, res) {
 }
 
 /**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * Controlador general para buscar con filtros.
  */
 async function get(req, res) {
-
     try {
         await find(req, res);
     } catch (error) {
-        if(error.message.includes("[ERR_FIELD_QUERY_INVALID]")) {
-            // Bad Request
+        if (error.message.includes("[ERR_FIELD_QUERY_INVALID]")) {
             res.status(400).json({ error: error.message });
-        }
-        else {
+        } else {
             res.status(500).json({ error: error.message });
         }
     }
 }
 
+/**
+ * Actualiza parcialmente una transacción.
+ */
 async function modificate(req, res) {
     const { id } = req.data.params;
     const transaction = req.body;
     await transactionServices.find({ id }, req.data.pagination)
-        .then( founds => {
+        .then((founds) => {
             if (founds.length === 0) {
                 res.status(404).json({ error: "Transaction not found" });
             } else {
-                // Modificate the transaction
                 const updatedTransaction = { ...founds[0], ...transaction };
-                // Save the updated transaction to the database (not implemented in this example)
-                res.status(200).json({ message: "Transaction updated successfully", data: updatedTransaction });
                 transactionServices.update(id, updatedTransaction)
                     .then(() => {
                         res.status(200).json({ message: "Transaction updated successfully", data: updatedTransaction });
@@ -97,6 +87,9 @@ async function modificate(req, res) {
         });
 }
 
+/**
+ * Agrega una nueva transacción.
+ */
 async function add(req, res) {
     const transaction = req.body;
     await transactionServices.add(transaction)
@@ -108,11 +101,45 @@ async function add(req, res) {
         });
 }
 
+/**
+ * Actualiza una transacción por ID.
+ */
 async function update(req, res) {
+    const { id } = req.data.params;
+    const transactionData = req.body;
 
+    try {
+        const [existing] = await transactionServices.find({ id }, req.data.pagination);
+        if (!existing) {
+            return res.status(404).json({ error: "Transaction not found" });
+        }
+
+        const updatedTransaction = { ...existing, ...transactionData };
+        await transactionServices.update(id, updatedTransaction);
+
+        res.status(200).json({ message: "Transaction updated successfully", data: updatedTransaction });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 }
-async function _delete(req, res) {
 
+/**
+ * Elimina una transacción por ID.
+ */
+async function _delete(req, res) {
+    const { id } = req.data.params;
+
+    try {
+        const [existing] = await transactionServices.find({ id }, req.data.pagination);
+        if (!existing) {
+            return res.status(404).json({ error: "Transaction not found" });
+        }
+
+        await transactionServices.delete(id);
+        res.status(200).json({ message: "Transaction deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 }
 
 module.exports = { get, findByID, modificate, update, delete: _delete, add };
