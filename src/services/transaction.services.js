@@ -6,6 +6,7 @@ const transactionModel = require("../models/transaction.model.js");
  * @param {number} Pagination.Limit Pagination Param
  * @param {number} Pagination.Offset Pagination Param
  */
+/*
 async function getAll({ Limit, Offset }) {
     try {
         return await transactionModel.getAll({ Limit, Offset });
@@ -14,6 +15,7 @@ async function getAll({ Limit, Offset }) {
         throw err;
     }
 }
+*/
 
 /**
  *
@@ -30,4 +32,19 @@ async function find(Filters, { Limit, Offset }) {
     }
 }
 
-module.exports = { getAll, find };
+/**
+ *
+ * @param {object} Filters parameters of find
+ * @param {number} Limit Pagination Param
+ * @param {number} Offset Pagination Param
+ */
+async function add(Filters, { Limit, Offset }) {
+    try {
+        return await transactionModel.add(Filters, { Limit, Offset });
+    } catch (err) {
+        console.error(err);
+        throw err;
+    }
+}
+
+module.exports = { /* getAll, */ find, add };

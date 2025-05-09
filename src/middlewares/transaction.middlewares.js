@@ -53,19 +53,23 @@ class Validate {
     }
 
     static quantity(value) {
-        const Match = value.match(/(\d+)\-(\d+)|(\d+)/);
-        const IsValidated = Match !== null;
+        if(typeof value === "string") {
+            const Match = value.match(/(\d+)\-(\d+)|(\d+)/);
+            const IsValidated = Match !== null;
 
-        if(!IsValidated) throw new Error("[ERR_FIELD_QUERY_INVALID] quantity is invalid");
-        if(value === "") return value;
-        if(Match[1] && Match[2]) {
-            const [ Min, Max ] = [ Number(Match[1]), Number(Match[2]) ];
-            if(Min < Max) return { Min, Max };
+            if(!IsValidated) throw new Error("[ERR_FIELD_QUERY_INVALID] quantity is invalid");
+            if(Match[1] && Match[2]) {
+                const [ Min, Max ] = [ Number(Match[1]), Number(Match[2]) ];
+                if(Min < Max) return { Min, Max };
+                else throw new Error("[ERR_FIELD_QUERY_INVALID] quantity is invalid");
+            } else if(Match[3]) {
+                const [ Min, Max ] = [ Number(Match[3]), Number(Match[3]) ];
+                return { Min, Max }
+            } else throw new Error("[ERR_FIELD_QUERY_INVALID] quantity stranger");
+        } else if(typeof value === "number"){
+            if(value >= 0) return { Min: value, Max: value };
             else throw new Error("[ERR_FIELD_QUERY_INVALID] quantity is invalid");
-        } else if(Match[3]) {
-            const [ Min, Max ] = [ Number(Match[3]), Number(Match[3]) ];
-            return { Min, Max }
-        } else throw new Error("[ERR_FIELD_QUERY_INVALID] quantity stranger");
+        }
     }
 
     /**
@@ -187,6 +191,68 @@ class Validate {
             response.status(400).json({ error: "[ERR_FIELD_QUERY_INVALID] id is invalid" });
         }
     }
+
+    static validateTransaction(request, response, next) {
+        try {
+            const IsBodyValid = request.body !== null && request.body !== undefined && typeof request.body === "object" && Object.keys(request.body).length > 0;
+            if(!IsBodyValid) throw new Error("[ERR_FIELD_QUERY_INVALID] body is invalid");
+            const BodyValid = request.body;
+            const IDIsValid = BodyValid?.id?.match(/^[0-9]+$/) !== null;
+
+            request.data = {};
+            request.data.body = {};
+            if(IDIsValid && Number(BodyValid.id) > 0) {
+                // Aqui no debe ser posible que rompa por el parametro body, POST se romperia
+                request.data.body.id = Number(BodyValid.id);
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["since"](BodyValid.DIA_TRANSPORTE)) {
+                request.data.body.DIA_TRANSPORTE = BodyValid.DIA_TRANSPORTE;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["company_name"](BodyValid.NOMBRE_EMPRESA)) {
+                request.data.body.NOMBRE_EMPRESA = BodyValid.NOMBRE_EMPRESA;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["line"](BodyValid.LINEA)) {
+                request.data.body.LINEA = BodyValid.LINEA;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["amba"](BodyValid.AMBA)) {
+                request.data.body.AMBA = BodyValid.AMBA;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["transport_type"](BodyValid.TIPO_TRANSPORTE)) {
+                request.data.body.TIPO_TRANSPORTE = BodyValid.TIPO_TRANSPORTE;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["jurisdiction"](BodyValid.JURISDICCION)) {
+                request.data.body.JURISDICCION = BodyValid.JURISDICCION;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["province"](BodyValid.PROVINCIA)) {
+                request.data.body.PROVINCIA = BodyValid.PROVINCIA;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["municipality"](BodyValid.MUNICIPIO)) {
+                request.data.body.MUNICIPIO = BodyValid.MUNICIPIO;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["quantity"](BodyValid.CANTIDAD)) {
+                request.data.body.CANTIDAD = BodyValid.CANTIDAD;
+            }
+            if(Validate.VALIDATORS_PARAMS_FILTER["preliminary_data"](BodyValid.DATO_PRELIMINAR)) {
+                request.data.body.DATO_PRELIMINAR = BodyValid.DATO_PRELIMINAR;
+            }
+
+            next();
+        } catch(err) {
+            if(err.message.includes("[ERR_FIELD_QUERY_INVALID]")) {
+                // Bad Request
+                response.status(400).json({ error: err.message });
+            }
+            else {
+                // Internal Server Error
+                throw new Error(err);
+            }
+            return;
+        }
+    }
 }
 
-module.exports = { validateFilters: Validate.validateFilters, validateID: Validate.validateID };
+module.exports = {
+    validateFilters: Validate.validateFilters,
+    validateID: Validate.validateID,
+    validateTransaction: Validate.validateTransaction
+};

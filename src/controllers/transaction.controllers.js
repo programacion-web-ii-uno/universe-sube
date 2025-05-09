@@ -71,4 +71,48 @@ async function get(req, res) {
     }
 }
 
-module.exports = { get, findByID }
+async function modificate(req, res) {
+    const { id } = req.data.params;
+    const transaction = req.body;
+    await transactionServices.find({ id }, req.data.pagination)
+        .then( founds => {
+            if (founds.length === 0) {
+                res.status(404).json({ error: "Transaction not found" });
+            } else {
+                // Modificate the transaction
+                const updatedTransaction = { ...founds[0], ...transaction };
+                // Save the updated transaction to the database (not implemented in this example)
+                res.status(200).json({ message: "Transaction updated successfully", data: updatedTransaction });
+                transactionServices.update(id, updatedTransaction)
+                    .then(() => {
+                        res.status(200).json({ message: "Transaction updated successfully", data: updatedTransaction });
+                    })
+                    .catch((error) => {
+                        res.status(500).json({ error: error.message });
+                    });
+            }
+        })
+        .catch((error) => {
+            res.status(500).json({ error: error.message });
+        });
+}
+
+async function add(req, res) {
+    const transaction = req.body;
+    await transactionServices.add(transaction)
+        .then(() => {
+            res.status(201).json({ message: "Transaction added successfully" });
+        })
+        .catch((error) => {
+            res.status(500).json({ error: error.message });
+        });
+}
+
+async function update(req, res) {
+
+}
+async function _delete(req, res) {
+
+}
+
+module.exports = { get, findByID, modificate, update, delete: _delete, add };

@@ -4,6 +4,7 @@ const streamArray = require('stream-json/streamers/StreamArray');
 
 const PATH_DB = "D:\\uno\\materias\\PWII\\universe-sube\\database\\cantidad-de-transacciones-sube-por-dia-en-2024.json";
 
+/*
 async function getAll({ Limit, Offset }) {
     let currentIndex = 0;
     let results = [];
@@ -40,6 +41,7 @@ async function getAll({ Limit, Offset }) {
         });
     })
 }
+*/
 
 
 // Ejemplo de registro de un objeto del JSON en el archivo
@@ -159,4 +161,60 @@ async function find(Filters, { Limit, Offset }) {
     })
 }
 
-module.exports = { getAll, find }
+
+/**
+ * Agrega un registro al archivo JSON
+ * @param {object} Transaction
+ * @param {string} Transaction.DIA_TRANSPORTE
+ * @param {string} Transaction.NOMBRE_EMPRESA
+ * @param {string} Transaction.LINEA
+ * @param {string} Transaction.AMBA
+ * @param {string} Transaction.TIPO_TRANSPORTE
+ * @param {string} Transaction.JURISDICCION
+ * @param {string} Transaction.PROVINCIA
+ * @param {string} Transaction.MUNICIPIO
+ * @param {number} Transaction.CANTIDAD
+ * @param {string} Transaction.DATO_PRELIMINAR
+ * @returns
+*/
+async function add(Transaction) {
+    const transactions = JSON.parse(fs.readFileSync(PATH_DB, 'utf8'));
+    transactions.push(Transaction);
+
+    fs.writeFileSync(PATH_DB, JSON.stringify(transactions, null, 2), 'utf8');
+
+    return new Promise( (res, rej) => {
+        const jsonStream = fs.createReadStream(PATH_DB) // deberia ser un stream de escritura
+            .pipe(parser())
+            .pipe(new streamArray());
+
+        jsonStream.on('data', ({ value: transaction }) => {
+
+            fixValue(transaction);
+
+            if (matchesFilters(Filters, transaction) && currentIndex >= Offset && results.length < Limit) {
+                results.push(transaction);
+            }
+            currentIndex++;
+
+            if (results.length === Limit) {
+                jsonStream.pause();
+                res(results);
+            }
+        });
+
+        jsonStream.on('end', () => {
+            if (results.length < Limit) { // por si es menor que el limit
+                res(results);
+            }
+            res(results);
+        });
+
+        jsonStream.on('error', (err) => {
+            console.error(`Ocurrio un error leyendo el JSON ${PATH_DB}:${currentIndex}`)
+            rej(err);
+        });
+    })
+}
+
+module.exports = { /* getAll, */ find, add }
