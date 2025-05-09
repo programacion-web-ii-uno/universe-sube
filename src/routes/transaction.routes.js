@@ -1,7 +1,7 @@
 const express = require('express');
 const Router = express.Router();
-const transactionController = require('../controllers/transaction.controllers.js');
 const transactionMiddleware = require('../middlewares/transaction.middlewares.js');
+const transactionController = require('../controllers/transaction.controllers.js');
 
 // En resumen las actividades serian las minimas de un CRUD:
 // GET sube/get/?limit=20&offset=1 devuelve todas las transacciones con paginación | aca entra la magia de los filtros
@@ -14,7 +14,7 @@ const transactionMiddleware = require('../middlewares/transaction.middlewares.js
 // DELETE sube/get/:id borra una transacción con el ID especificado
 
 Router.get('/get', transactionMiddleware.validateFilters, transactionController.get);
-// Router.get('/get/:id', transactionController.findByID);
+Router.get('/get/:id', transactionMiddleware.validateID, transactionController.findByID);
 // Router.patch('/modificate/:id', transactionController.modificate);
 // Router.put('/get/update/:id', transactionController.update);
 // Router.delete('/get/delete/:id', transactionController.delete);

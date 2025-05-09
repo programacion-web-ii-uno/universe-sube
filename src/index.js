@@ -6,7 +6,7 @@ const TransactionsRoutes = require('./routes/transaction.routes.js');
 const PORT = 7_050;
 const App = express();
 
-App.use(morgan('tiny'));
+App.use(morgan('dev'));
 App.use(express.json());
 
 App.use('/api/transaction', TransactionsRoutes.Router);

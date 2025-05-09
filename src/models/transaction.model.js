@@ -44,7 +44,7 @@ async function getAll({ Limit, Offset }) {
 
 // Ejemplo de registro de un objeto del JSON en el archivo
 // {
-//     "DIA_TRANSPORTE":"2024-01-01",
+//     "DIA_TRANSPORTE":"2024-12-31",
 //     "NOMBRE_EMPRESA":"AUTOTRANSPORTE CEFERINO S.R.L",
 //     "LINEA":"LINEA_3",
 //     "AMBA":"NO",
@@ -55,6 +55,14 @@ async function getAll({ Limit, Offset }) {
 //     "CANTIDAD":"111",
 //     "DATO_PRELIMINAR":"NO"
 // }
+
+function fixValue(transaction) {
+    // Transform the transaction
+    if(transaction.CANTIDAD)
+        transaction.CANTIDAD = Number(transaction.CANTIDAD);
+    if(transaction.id)
+        transaction.id = Number(transaction.id);
+}
 
 /**
  *
@@ -69,13 +77,15 @@ async function getAll({ Limit, Offset }) {
  * @param {number} Filters.until.day Date filter
  * @param {string} Filters.company_name Company name filter
  * @param {string} Filters.line
- * @param {string} Filters.amba
+ * @param {boolean} Filters.amba
  * @param {string} Filters.transport_type
  * @param {string} Filters.jurisdiction
  * @param {string} Filters.province
  * @param {string} Filters.municipality
- * @param {number} Filters.quantity
- * @param {string} Filters.preliminary_data
+ * @param {object} Filters.quantity
+ * @param {number} Filters.quantity.Min
+ * @param {number} Filters.quantity.Max
+ * @param {boolean} Filters.preliminary_data
  * @param {object} param1
  * @param {number} param1.Limit Pagination Param
  * @param {number} param1.Offset Pagination Param
@@ -90,32 +100,42 @@ async function find(Filters, { Limit, Offset }) {
             .pipe(parser())
             .pipe(new streamArray());
 
-        jsonStream.on('data', ({ value: Value }) => {
-            const matchesFilters = (Filters, Value) => {
-                if (Filters.since) {
-                    const sinceDate = new Date(Filters.since.year, Filters.since.month - 1, Filters.since.day);
-                    const recordDate = new Date(Value.DIA_TRANSPORTE);
-                    if (recordDate < sinceDate) return false;
+        jsonStream.on('data', ({ value: transaction }) => {
+
+            fixValue(transaction);
+
+            const matchesFilters = (Filters, Transaction) => {
+
+                if(Filters.id) {
+                    return Transaction.id === Filters.id;
                 }
-                if (Filters.until) {
-                    const untilDate = new Date(Filters.until.year, Filters.until.month - 1, Filters.until.day);
-                    const recordDate = new Date(Value.DIA_TRANSPORTE);
-                    if (recordDate > untilDate) return false;
+                else {
+                    if (Filters.since) {
+                        const sinceDate = new Date(Filters.since.year, Filters.since.month - 1, Filters.since.day);
+                        const recordDate = new Date(Transaction.DIA_TRANSPORTE);
+                        if (recordDate < sinceDate) return false;
+                    }
+                    if (Filters.until) {
+                        const untilDate = new Date(Filters.until.year, Filters.until.month - 1, Filters.until.day);
+                        const recordDate = new Date(Transaction.DIA_TRANSPORTE);
+                        if (recordDate > untilDate) return false;
+                    }
+                    if (Filters.company_name && Transaction.NOMBRE_EMPRESA !== Filters.company_name.toUpperCase()) return false;
+                    if (Filters.line && Transaction.LINEA !== Filters.line.toUpperCase()) return false;
+                    if (Filters.amba && Transaction.AMBA !== Filters.amba.toUpperCase()) return false;
+                    if (Filters.transport_type && Transaction.TIPO_TRANSPORTE !== Filters.transport_type.toUpperCase()) return false;
+                    if (Filters.jurisdiction && Transaction.JURISDICCION !== Filters.jurisdiction.toUpperCase()) return false;
+                    if (Filters.province && Transaction.PROVINCIA !== Filters.province.toUpperCase()) return false;
+                    if (Filters.municipality && Transaction.MUNICIPIO !== Filters.municipality.toUpperCase()) return false;
+                    if (Filters.quantity && (Transaction.CANTIDAD < Filters.quantity.Min || Filters.quantity.Max < Transaction.CANTIDAD)) return false;
+                    if (Filters.preliminary_data && Transaction.DATO_PRELIMINAR !== Filters.preliminary_data.toUpperCase()) return false;
+
+                    return true;
                 }
-                if (Filters.company_name && Value.NOMBRE_EMPRESA !== Filters.company_name) return false;
-                if (Filters.line && Value.LINEA !== Filters.line) return false;
-                if (Filters.amba && Value.AMBA !== Filters.amba) return false;
-                if (Filters.transport_type && Value.TIPO_TRANSPORTE !== Filters.transport_type) return false;
-                if (Filters.jurisdiction && Value.JURISDICCION !== Filters.jurisdiction) return false;
-                if (Filters.province && Value.PROVINCIA !== Filters.province) return false;
-                if (Filters.municipality && Value.MUNICIPIO !== Filters.municipality) return false;
-                if (Filters.quantity && Value.CANTIDAD !== Filters.quantity) return false;
-                if (Filters.preliminary_data && Value.DATO_PRELIMINAR !== Filters.preliminary_data) return false;
-                return true;
             };
 
-            if (matchesFilters(Filters, Value) && currentIndex >= Offset && results.length < Limit) {
-                results.push(Value);
+            if (matchesFilters(Filters, transaction) && currentIndex >= Offset && results.length < Limit) {
+                results.push(transaction);
             }
             currentIndex++;
 
@@ -129,7 +149,6 @@ async function find(Filters, { Limit, Offset }) {
             if (results.length < Limit) { // por si es menor que el limit
                 res(results);
             }
-            console.log('Objetos paginados:', results);
             res(results);
         });
 
