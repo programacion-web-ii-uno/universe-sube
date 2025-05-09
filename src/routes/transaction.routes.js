@@ -15,8 +15,9 @@ const transactionController = require('../controllers/transaction.controllers.js
 
 Router.get('/get', transactionMiddleware.validateFilters, transactionController.get);
 Router.get('/get/:id', transactionMiddleware.validateID, transactionController.findByID);
-// Router.patch('/modificate/:id', transactionController.modificate);
-// Router.put('/get/update/:id', transactionController.update);
-// Router.delete('/get/delete/:id', transactionController.delete);
+Router.post('/add/', transactionMiddleware.validateTransaction, transactionController.add);
+Router.patch('/modificate/', transactionMiddleware.validateTransaction, transactionController.modificate);
+Router.put('/update/', transactionMiddleware.validateTransaction, transactionController.update);
+Router.delete('/delete/', transactionMiddleware.validateTransaction, transactionController.delete);
 
 module.exports = { Router };
